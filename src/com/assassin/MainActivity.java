@@ -18,7 +18,6 @@ import android.widget.Toast;
 
 public class MainActivity extends FragmentActivity implements LocationListener, LocationSource {
   
-  //private LatLng latlng;
   private String provider;
   
   private GoogleMap mMap;
