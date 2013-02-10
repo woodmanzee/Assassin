@@ -1,12 +1,14 @@
 package com.assassin;
 
+import java.util.List;
+
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.LocationSource;
-import com.google.android.gms.maps.LocationSource.OnLocationChangedListener;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.parse.Parse;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -18,71 +20,74 @@ import android.widget.Toast;
 
 public class MainActivity extends FragmentActivity implements LocationListener, LocationSource {
   
-  private String provider;
+	private String provider;
+	private Location location;
   
-  private GoogleMap mMap;
+	private GoogleMap mMap;
   
-  private OnLocationChangedListener mListener;
-  private LocationManager locationManager;
+    private OnLocationChangedListener mListener;
+    private LocationManager locationManager;
+    
+    Player myPlayer;
+//    ParseObject parsePlayer;
 
-  @Override
-  protected void onCreate(Bundle savedInstanceState) 
-  {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
 	  
-      super.onCreate(savedInstanceState);
-      setContentView(R.layout.activity_main);
-	    
-      locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+    	super.onCreate(savedInstanceState);
+    	setContentView(R.layout.activity_main);
+    	
+    	Parse.initialize(this, "7WuNEiRpNQA9Hh296skBSfDjDT6zeiIaVouMG2ur", "pxYTUrq6usL2f2y2rqWedkncUfKVHeNIenChc77N"); 
+    	
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
-  	    if(locationManager != null)
-  	    {
+  	    if(locationManager != null) {
   	        boolean gpsIsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
   	        boolean networkIsEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
   	    	
-  	    	if(gpsIsEnabled)
-  	    	{
+  	    	if(gpsIsEnabled) {
   	    		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000L, 10F, this);
-  	    	}
-  	    	else if(networkIsEnabled)
-  	    	{
+  	    	} else if(networkIsEnabled) {
   	    		locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000L, 10F, this);
-  	    	}
-  	    	else
-  	    	{
+  	    	} else {
   	    		//Show an error dialog that GPS is disabled...
-            }
-  	    }
-  	    else
-  	    {
+  	    	}
+  	    } else {
   	    	//Show some generic error dialog because something must have gone wrong with location manager.
   	    }
       
-      setUpMapIfNeeded();
-  }
+        setUpMapIfNeeded();
+        createPlayer();
+        playLoop();
+    }
 
-	@Override
-	public void onPause()
-	{
-		if(locationManager != null)
-		{
-			locationManager.removeUpdates(this);
-		}
-		
-		super.onPause();
-	}
 	
-	@Override
-	public void onResume()
-	{
-		super.onResume();
-		
-		setUpMapIfNeeded();
-		
-		if(locationManager != null)
-		{
-			mMap.setMyLocationEnabled(true);
-		}
-	}
+    private void createPlayer() {
+    	myPlayer = new Player(location);
+    }
+    
+    private void playLoop() {
+    	while(true) {
+    		// uses loop with Eric's new pseudocode - still doesn't work
+    		plotChasers(myPlayer.runLoop());
+    		
+    		// original loop that also doesn't work
+	    	/*myPlayer.updateLocation(location);  // get my location from Android
+	    	myPlayer.refresh();  // refresh my object from Parse
+	    	plotChasers(myPlayer.getChasers());  // get and plot all chasers
+	    	myPlayer.updateGeoPoint();
+	    	myPlayer.saveInBackground();
+	    	*/
+    	}
+    }
+    
+    private void plotChasers(List<LatLng> chasers) {
+    	for (int i = 0; i < chasers.size(); i++) {
+    		mMap.addMarker(new MarkerOptions()
+            	.position(chasers.get(i))
+            	.title("Chaser " + i));
+    	}
+    }
 	
 
   /**
@@ -103,16 +108,13 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
    */
   private void setUpMapIfNeeded() {
       // Do a null check to confirm that we have not already instantiated the map.
-      if (mMap == null) 
-      {
+      if (mMap == null) {
           // Try to obtain the map from the SupportMapFragment.
           mMap = ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMap();
           // Check if we were successful in obtaining the map.
          
-          if (mMap != null) 
-          {
+          if (mMap != null) {
               setUpMap();
-              
           }
 
           //This is how you register the LocationSource
@@ -122,7 +124,7 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
           provider = locationManager.getBestProvider(criteria, false);
           
           // gets last known location from 
-          Location location = locationManager.getLastKnownLocation(provider);
+          location = locationManager.getLastKnownLocation(provider);
           LatLng latlng = new LatLng(location.getLatitude(), location.getLongitude());
           mMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
           mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latlng, 15));
@@ -134,51 +136,64 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
    * <p>
    * This should only be called once and when we are sure that {@link #mMap} is not null.
    */
-  private void setUpMap() 
-  {
-      mMap.setMyLocationEnabled(true);
-  }
+    private void setUpMap() {
+        mMap.setMyLocationEnabled(true);
+    }
+  
+    @Override
+	public void onPause() {
+		if(locationManager != null) {
+			locationManager.removeUpdates(this);
+		}
+		
+		super.onPause();
+	}
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+		
+		setUpMapIfNeeded();
+		
+		if(locationManager != null)	{
+			mMap.setMyLocationEnabled(true);
+		}
+	}
   
 	@Override
-	public void activate(OnLocationChangedListener listener) 
-	{
+	public void activate(OnLocationChangedListener listener) {
 		mListener = listener;
 	}
 	
 	@Override
-	public void deactivate() 
-	{
+	public void deactivate() {
 		mListener = null;
 	}
 
 	@Override
-	public void onLocationChanged(Location location) 
-	{
-	    if( mListener != null )
-	    {
+	public void onLocationChanged(Location location) {
+	    if( mListener != null ) {
 	        mListener.onLocationChanged( location );
 
 	        mMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
+	        Player.updateLocation(location);
 	    }
 	}
 
 	@Override
-	public void onProviderDisabled(String provider) 
-	{
+	public void onProviderDisabled(String provider) {
 		// TODO Auto-generated method stub
 		Toast.makeText(this, "Provider disabled", Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
-	public void onProviderEnabled(String provider) 
-	{
+	public void onProviderEnabled(String provider) {
 		// TODO Auto-generated method stub
 		Toast.makeText(this, "Provider enabled", Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras) 
-	{
+	public void onStatusChanged(String provider, int status, Bundle extras) {
 		// TODO Auto-generated method stub
 		Toast.makeText(this, "Location based status has changed", Toast.LENGTH_SHORT).show();
 	}
