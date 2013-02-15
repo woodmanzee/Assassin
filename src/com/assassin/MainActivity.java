@@ -1,12 +1,5 @@
 package com.assassin;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.LocationSource;
-import com.google.android.gms.maps.LocationSource.OnLocationChangedListener;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -15,6 +8,11 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.LocationSource;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
 
 public class MainActivity extends FragmentActivity implements LocationListener, LocationSource {
   
@@ -31,7 +29,7 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
 	  
       super.onCreate(savedInstanceState);
       setContentView(R.layout.activity_main);
-	    
+
       locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
   	    if(locationManager != null)
@@ -160,6 +158,8 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
 
 	        mMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
 	    }
+
+	    Player.getInstance().saveLocation(location);
 	}
 
 	@Override
