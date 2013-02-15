@@ -30,7 +30,6 @@ public class Player {
 	{
 		ParseGeoPoint point = new ParseGeoPoint(location.getLatitude(), location.getLongitude());
 		parseObject.put("location", point);
-		parseObject.put("caught", true);
 		parseObject.saveInBackground();
 	}
 }
