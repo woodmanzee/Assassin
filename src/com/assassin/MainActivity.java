@@ -1,10 +1,15 @@
 package com.assassin;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.widget.Toast;
 
@@ -13,22 +18,69 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 public class MainActivity extends FragmentActivity implements LocationListener, LocationSource {
   
   private String provider;
+	private static final int ADD_MARKER = 0;
+	private static final int CLEAR_MAP = 1;
   
   private GoogleMap mMap;
   
   private OnLocationChangedListener mListener;
   private LocationManager locationManager;
 
+  private Location playerLocation = null;
+
   @Override
   protected void onCreate(Bundle savedInstanceState) 
   {
-	  
       super.onCreate(savedInstanceState);
       setContentView(R.layout.activity_main);
+
+    // Handles message passing from background thread to UI thread
+	final Handler handler = new Handler()
+	{
+		@Override
+		public void handleMessage(Message msg)
+		{
+			if(msg.what == ADD_MARKER)
+			{
+				mMap.addMarker(new MarkerOptions().position((LatLng)msg.obj));
+			}
+			else if(msg.what == CLEAR_MAP)
+			{
+				mMap.clear();
+			}
+			super.handleMessage(msg);
+		}
+	};
+
+		// Spawns new thread that will handle player updating every 15 seconds.
+		Timer timer = new Timer(true);
+		TimerTask refresher = new TimerTask() {
+			public void run() {
+				Player player = Player.getInstance();
+				if (playerLocation != null)
+					player.saveLocation(playerLocation);
+				player.refresh();
+
+				Message msg = handler.obtainMessage();
+				msg.what = CLEAR_MAP;
+				handler.sendMessage(msg);
+
+				for (LatLng runnerLoc : player.getRunnerLocations()) {
+					msg = handler.obtainMessage();
+					msg.what = ADD_MARKER;
+					msg.obj = runnerLoc;
+					handler.sendMessage(msg);
+				}
+			}
+		};
+
+	  // first event immediately,  following after 15 seconds each
+	  timer.scheduleAtFixedRate(refresher, 0, 15000);
 
       locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
@@ -159,7 +211,7 @@ public class MainActivity extends FragmentActivity implements LocationListener, 
 	        mMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
 	    }
 
-	    Player.getInstance().saveLocation(location);
+	    playerLocation = location;
 	}
 
 	@Override
