@@ -55,14 +55,14 @@ public class Player {
 		}
 	}
 
-	public ArrayList<LatLng> getRunnerLocations() {
+	public ArrayList<Location> getRunnerLocations() {
 		try {
 			parseObject.fetchIfNeeded();
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
 
-		ArrayList<LatLng> result = new ArrayList<LatLng>();
+		ArrayList<Location> result = new ArrayList<Location>();
 
 		try {
 			List<ParseObject> runners = parseObject.getRelation("chasers")
@@ -70,10 +70,9 @@ public class Player {
 			for (ParseObject runner : runners) {
 				ParseGeoPoint runnerLoc = runner.getParseGeoPoint("location");
 				if (runnerLoc != null) {
-					LatLng newLoc = new LatLng(runnerLoc.getLatitude(),
-							runnerLoc.getLongitude());
-					Log.d("ASSASSINS", "New Loc: " + newLoc.latitude + " "
-							+ newLoc.longitude);
+					Location newLoc = new Location("");
+					newLoc.setLatitude(runnerLoc.getLatitude());
+					newLoc.setLongitude(runnerLoc.getLongitude());
 					result.add(newLoc);
 				}
 			}

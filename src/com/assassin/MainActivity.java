@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentActivity;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -20,12 +21,16 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import com.assassin.R;
+
 public class MainActivity extends FragmentActivity implements LocationListener,
 		LocationSource {
 
 	private String provider;
 	private static final int ADD_MARKER = 0;
 	private static final int CLEAR_MAP = 1;
+	protected static final int SET_DISTANCE = 2;
+	protected static final float FEET_IN_ONE_METER = 3.28084F;
 
 	private GoogleMap mMap;
 
@@ -34,20 +39,27 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 
 	private Location playerLocation = null;
 
+	private TextView distanceText;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+
+		distanceText = (TextView) findViewById(R.id.distanceText);
 
 		// Handles message passing from background thread to UI thread
 		final Handler handler = new Handler() {
 			@Override
 			public void handleMessage(Message msg) {
 				if (msg.what == ADD_MARKER) {
-					mMap.addMarker(new MarkerOptions()
-							.position((LatLng) msg.obj));
+					mMap.addMarker(new MarkerOptions().position(
+							(LatLng) msg.obj).title(msg.arg1 + " feet"));
 				} else if (msg.what == CLEAR_MAP) {
 					mMap.clear();
+				} else if (msg.what == SET_DISTANCE) {
+					distanceText.setText("  Nearest chaser: " + msg.arg1
+							+ " feet");
 				}
 				super.handleMessage(msg);
 			}
@@ -66,12 +78,33 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 				msg.what = CLEAR_MAP;
 				handler.sendMessage(msg);
 
-				for (LatLng runnerLoc : player.getRunnerLocations()) {
+				int minDistance = Integer.MAX_VALUE;
+
+				// Send messages to add markers for chasers
+				for (Location runnerLoc : player.getRunnerLocations()) {
 					msg = handler.obtainMessage();
 					msg.what = ADD_MARKER;
-					msg.obj = runnerLoc;
-					handler.sendMessage(msg);
+
+					LatLng latLng = new LatLng(runnerLoc.getLatitude(),
+							runnerLoc.getLongitude());
+					msg.obj = latLng;
+
+					int distance = Integer.MAX_VALUE;
+					if (playerLocation != null)
+						distance = (int) (playerLocation.distanceTo(runnerLoc) * FEET_IN_ONE_METER);
+					if (distance < minDistance && distance > 100)
+						minDistance = distance;
+					msg.arg1 = distance;
+
+					if (playerLocation != null)
+						handler.sendMessage(msg);
 				}
+
+				msg = handler.obtainMessage();
+				msg.what = SET_DISTANCE;
+				msg.arg1 = minDistance;
+				if (playerLocation != null)
+					handler.sendMessage(msg);
 			}
 		};
 
