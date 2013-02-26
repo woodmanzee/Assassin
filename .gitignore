@@ -6,6 +6,7 @@
 .project
 .metadata
 bin/
+gen/*
 tmp/
 *.tmp
 *.bak
@@ -15,6 +16,9 @@ local.properties
 .classpath
 .settings/
 .loadpath
+project.properties
+libs/Parse-1.1.11.jar
+libs/Parse-1.1.11.jar.properties
 
 # External tool builders
 .externalToolBuilders/
