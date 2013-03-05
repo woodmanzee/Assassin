@@ -95,4 +95,8 @@ public class Player {
 		}
 		return result;
 	}
+
+	public boolean isCaught() {
+		return parseObject.getBoolean("caught");
+	}
 }

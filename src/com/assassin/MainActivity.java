@@ -2,6 +2,8 @@ package com.assassin;
 
 import java.util.TimerTask;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -19,16 +21,20 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import com.assassin.R;
-
 public class MainActivity extends FragmentActivity implements LocationListener,
 		LocationSource {
 
 	private String provider;
+
+	// Message IDs
 	private static final int ADD_MARKER = 0;
 	private static final int CLEAR_MAP = 1;
 	protected static final int SET_DISTANCE = 2;
+	protected static final int CAUGHT = 3;
+
 	protected static final float FEET_IN_ONE_METER = 3.28084F;
+
+	private static final long REFRESH_RATE = 15000; // time in ms
 
 	private GoogleMap mMap;
 
@@ -39,12 +45,33 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 
 	private TextView distanceText;
 
+	private AlertDialog caughtAlert;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
 		distanceText = (TextView) findViewById(R.id.distanceText);
+
+		// Instantiate caught alert box.
+		if (caughtAlert == null) {
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+			// Set content
+			builder.setTitle(R.string.caught);
+			builder.setMessage(R.string.caughtMsg);
+
+			// Add the buttons
+			builder.setPositiveButton(R.string.ok,
+					new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int id) {
+							// User clicked OK button
+						}
+					});
+			// Create the AlertDialog
+			caughtAlert = builder.create();
+		}
 
 		// Handles message passing from background thread to UI thread
 		final Handler handler = new Handler() {
@@ -61,6 +88,8 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 								+ " feet");
 					else
 						distanceText.setText("  Nearest chaser: n/a");
+				} else if (msg.what == CAUGHT) {
+					caughtAlert.show();
 				}
 				super.handleMessage(msg);
 			}
@@ -74,6 +103,14 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 				if (playerLocation != null)
 					player.saveLocation(playerLocation);
 				player.refresh();
+
+				// Check if caught
+				if (player.isCaught()) {
+					Message msg = handler.obtainMessage();
+					msg.what = CAUGHT;
+					handler.sendMessage(msg);
+					return;
+				}
 
 				Message msg = handler.obtainMessage();
 				msg.what = CLEAR_MAP;
@@ -117,8 +154,8 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 			}
 		};
 
-		// first event immediately, following after 15 seconds each
-		timer.scheduleAtFixedRate(refresher, 0, 15000);
+		// first event immediately, following after n seconds each
+		timer.scheduleAtFixedRate(refresher, 0, REFRESH_RATE);
 
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
