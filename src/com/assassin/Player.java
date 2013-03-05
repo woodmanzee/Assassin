@@ -74,11 +74,11 @@ public class Player {
 			List<ParseObject> relations;
 
 			if (getRunners) {
-				relations = parseObject.getRelation("runners")
-					.getQuery().find();
+				relations = parseObject.getRelation("runners").getQuery()
+						.find();
 			} else {
-				relations = parseObject.getRelation("chasers")
-				.getQuery().find();
+				relations = parseObject.getRelation("chasers").getQuery()
+						.find();
 			}
 
 			for (ParseObject relation : relations) {

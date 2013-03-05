@@ -58,7 +58,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 				} else if (msg.what == SET_DISTANCE) {
 					if (msg.arg1 != Integer.MAX_VALUE)
 						distanceText.setText("  Nearest chaser: " + msg.arg1
-							+ " feet");
+								+ " feet");
 					else
 						distanceText.setText("  Nearest chaser: n/a");
 				}
