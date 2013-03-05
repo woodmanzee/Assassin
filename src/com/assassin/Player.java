@@ -4,9 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.location.Location;
-import android.util.Log;
 
-import com.google.android.gms.maps.model.LatLng;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
@@ -56,6 +54,14 @@ public class Player {
 	}
 
 	public ArrayList<Location> getRunnerLocations() {
+		return getPlayerRelation(true);
+	}
+
+	public ArrayList<Location> getChaserLocations() {
+		return getPlayerRelation(false);
+	}
+
+	private ArrayList<Location> getPlayerRelation(boolean getRunners) {
 		try {
 			parseObject.fetchIfNeeded();
 		} catch (ParseException e) {
@@ -65,10 +71,18 @@ public class Player {
 		ArrayList<Location> result = new ArrayList<Location>();
 
 		try {
-			List<ParseObject> runners = parseObject.getRelation("chasers")
+			List<ParseObject> relations;
+
+			if (getRunners) {
+				relations = parseObject.getRelation("runners")
 					.getQuery().find();
-			for (ParseObject runner : runners) {
-				ParseGeoPoint runnerLoc = runner.getParseGeoPoint("location");
+			} else {
+				relations = parseObject.getRelation("chasers")
+				.getQuery().find();
+			}
+
+			for (ParseObject relation : relations) {
+				ParseGeoPoint runnerLoc = relation.getParseGeoPoint("location");
 				if (runnerLoc != null) {
 					Location newLoc = new Location("");
 					newLoc.setLatitude(runnerLoc.getLatitude());
@@ -79,7 +93,6 @@ public class Player {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-
 		return result;
 	}
 }

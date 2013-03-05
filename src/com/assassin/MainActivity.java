@@ -1,6 +1,5 @@
 package com.assassin;
 
-import java.util.Timer;
 import java.util.TimerTask;
 
 import android.location.Criteria;
@@ -12,7 +11,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -58,15 +56,18 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 				} else if (msg.what == CLEAR_MAP) {
 					mMap.clear();
 				} else if (msg.what == SET_DISTANCE) {
-					distanceText.setText("  Nearest chaser: " + msg.arg1
+					if (msg.arg1 != Integer.MAX_VALUE)
+						distanceText.setText("  Nearest chaser: " + msg.arg1
 							+ " feet");
+					else
+						distanceText.setText("  Nearest chaser: n/a");
 				}
 				super.handleMessage(msg);
 			}
 		};
 
 		// Spawns new thread that will handle player updating every 15 seconds.
-		Timer timer = new Timer(true);
+		TimerSingleton timer = TimerSingleton.getInstance();
 		TimerTask refresher = new TimerTask() {
 			public void run() {
 				Player player = Player.getInstance();
@@ -92,12 +93,20 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 					int distance = Integer.MAX_VALUE;
 					if (playerLocation != null)
 						distance = (int) (playerLocation.distanceTo(runnerLoc) * FEET_IN_ONE_METER);
-					if (distance < minDistance && distance > 100)
-						minDistance = distance;
+
 					msg.arg1 = distance;
 
 					if (playerLocation != null)
 						handler.sendMessage(msg);
+				}
+
+				// Calculate distance for chaser
+				for (Location chaserLoc : player.getChaserLocations()) {
+					int distance = Integer.MAX_VALUE;
+					if (playerLocation != null)
+						distance = (int) (playerLocation.distanceTo(chaserLoc) * FEET_IN_ONE_METER);
+					if (distance < minDistance)
+						minDistance = distance;
 				}
 
 				msg = handler.obtainMessage();
@@ -240,19 +249,15 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 	@Override
 	public void onProviderDisabled(String provider) {
 		// TODO Auto-generated method stub
-		Toast.makeText(this, "Provider disabled", Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
 	public void onProviderEnabled(String provider) {
 		// TODO Auto-generated method stub
-		Toast.makeText(this, "Provider enabled", Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		// TODO Auto-generated method stub
-		Toast.makeText(this, "Location based status has changed",
-				Toast.LENGTH_SHORT).show();
 	}
 }
