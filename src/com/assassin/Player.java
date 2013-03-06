@@ -99,4 +99,8 @@ public class Player {
 	public boolean isCaught() {
 		return parseObject.getBoolean("caught");
 	}
+
+	public static void resetInstance() {
+		instance = null;
+	}
 }

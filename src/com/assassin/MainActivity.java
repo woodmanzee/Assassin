@@ -67,6 +67,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 					new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface dialog, int id) {
 							// User clicked OK button
+							restartGame();
 						}
 					});
 			// Create the AlertDialog
@@ -200,6 +201,17 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 		if (locationManager != null) {
 			mMap.setMyLocationEnabled(true);
 		}
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+
+		restartGame();
+	}
+
+	private void restartGame() {
+		Player.resetInstance();
 	}
 
 	/**
