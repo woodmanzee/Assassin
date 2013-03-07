@@ -8,11 +8,14 @@ import android.location.Location;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
+import com.parse.ParseRelation;
 
 public class Player {
 
 	private static Player instance;
 	private ParseObject parseObject;
+	private boolean runnerCaughtByOther;
+	private boolean runnerCaughtByMe;
 
 	// Return instance of Singleton
 	public static Player getInstance() {
@@ -31,6 +34,9 @@ public class Player {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+
+		runnerCaughtByOther = false;
+		runnerCaughtByMe = false;
 	}
 
 	public void saveLocation(Location location) {
@@ -89,6 +95,23 @@ public class Player {
 					newLoc.setLongitude(runnerLoc.getLongitude());
 					result.add(newLoc);
 				}
+
+				// Check for caught runners
+				if (getRunners && relation.getBoolean("caught"))
+				{
+					if (relation.getParseObject("caughtBy").getObjectId().equals(parseObject.getObjectId()))
+					{
+						runnerCaughtByMe = true;
+					}
+					else
+					{
+						runnerCaughtByOther = true;
+					}
+
+					// Acknowledge catch by removing from relation
+					ParseRelation runners = parseObject.getRelation("runners");
+					runners.remove(relation);
+				}
 			}
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -102,5 +125,19 @@ public class Player {
 
 	public static void resetInstance() {
 		instance = null;
+	}
+
+	public boolean runnerCaughtByPlayer()
+	{
+		boolean result = runnerCaughtByMe;
+		runnerCaughtByMe = false;
+		return result;
+	}
+
+	public boolean runnerCaughtByOther()
+	{
+		boolean result = runnerCaughtByOther;
+		runnerCaughtByOther = false;
+		return result;
 	}
 }

@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentActivity;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -31,10 +32,13 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 	private static final int CLEAR_MAP = 1;
 	protected static final int SET_DISTANCE = 2;
 	protected static final int CAUGHT = 3;
+	protected static final int RUNNER_CAUGHT_BY_PLAYER = 4;
+	protected static final int RUNNER_CAUGHT_BY_OTHER = 5;
 
 	protected static final float FEET_IN_ONE_METER = 3.28084F;
 
 	private static final long REFRESH_RATE = 15000; // time in ms
+
 
 	private GoogleMap mMap;
 
@@ -91,6 +95,10 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 						distanceText.setText("  Nearest chaser: n/a");
 				} else if (msg.what == CAUGHT) {
 					caughtAlert.show();
+				} else if (msg.what == RUNNER_CAUGHT_BY_PLAYER) {
+					Toast.makeText(getApplicationContext(), "You caught a runner!", Toast.LENGTH_SHORT).show();
+				} else if (msg.what == RUNNER_CAUGHT_BY_OTHER) {
+					Toast.makeText(getApplicationContext(), "Someone else caught your runner.", Toast.LENGTH_SHORT).show();
 				}
 				super.handleMessage(msg);
 			}
@@ -136,6 +144,21 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 
 					if (playerLocation != null)
 						handler.sendMessage(msg);
+				}
+
+				// Check for caught runners
+				if (player.runnerCaughtByPlayer())
+				{
+					msg = handler.obtainMessage();
+					msg.what = RUNNER_CAUGHT_BY_PLAYER;
+					handler.sendMessage(msg);
+				}
+
+				if (player.runnerCaughtByOther())
+				{
+					msg = handler.obtainMessage();
+					msg.what = RUNNER_CAUGHT_BY_OTHER;
+					handler.sendMessage(msg);
 				}
 
 				// Calculate distance for chaser
