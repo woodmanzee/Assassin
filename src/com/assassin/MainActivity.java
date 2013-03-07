@@ -207,7 +207,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 	public void onStart() {
 		super.onStart();
 
-		restartGame();
+		//restartGame();
 	}
 
 	private void restartGame() {
