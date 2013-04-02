@@ -5,11 +5,9 @@ import java.util.List;
 
 import android.location.Location;
 
-import com.parse.GetCallback;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
-import com.parse.ParseQuery;
 import com.parse.ParseRelation;
 
 public class Player {
@@ -18,7 +16,7 @@ public class Player {
 	private ParseObject parseObject;
 	private boolean runnerCaughtByOther;
 	private boolean runnerCaughtByMe;
-	private String targetPoint;
+	private String targetPointDescription;
 
 	// Return instance of Singleton
 	public static Player getInstance() {
@@ -144,47 +142,34 @@ public class Player {
 		return result;
 	}
 
-	public int getRunnerType() {
-		// returns 1 if going to location, 0 if chasing a human
-		if (parseObject.getBoolean("chasingHuman") == true) {
-			return 0;
-		} else {
-			return 1;
-		}
+	public boolean chasingPlayers() {
+		return parseObject.getBoolean("chasingHuman");
 	}
 
 	public Location getPointLocation() {
-		
+
+		ParseObject point = parseObject.getParseObject("currentTarget");
 		try {
-			parseObject.fetchIfNeeded();
+			point.refresh();
 		} catch (ParseException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		//ParseGeoPoint point = parseObject.getParseObject("currentTarget").getParseGeoPoint("location");
-		
-		Location newLoc = new Location("");
-		ParseQuery query = new ParseQuery("BYULocation");
-		query.getInBackground(parseObject.getParseObject("currentTarget").getObjectId(), new GetCallback() {
-		  public void done(ParseObject object, ParseException e) {
-		    if (e == null) {
-		    	Location newLoc = new Location("");
-				newLoc.setLatitude(object.getParseGeoPoint("location").getLatitude());
-				newLoc.setLongitude(object.getParseGeoPoint("location").getLongitude());
-				targetPoint = object.getString("description");
-		    } else {
-		      // something went wrong
-		    }
-		  }
-		});
 
-		return newLoc;
+		if (point != null) {
+	    	Location newLoc = new Location("");
+	    	ParseGeoPoint geoPoint = point.getParseGeoPoint("location");
+			newLoc.setLatitude(geoPoint.getLatitude());
+			newLoc.setLongitude(geoPoint.getLongitude());
+			targetPointDescription = point.getString("description");
+			return newLoc;
+	    } else {
+	      // something went wrong
+	    	return null;
+	    }
 	}
 
 	public String getPointDescription() {
-		//return parseObject.getParseObject("targetLocation").getString("description");
-		return targetPoint;
+		return targetPointDescription;
 	}
-	
-	
 }

@@ -19,6 +19,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -28,7 +29,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 	private String provider;
 
 	// Message IDs
-	private static final int ADD_MARKER = 0;
+	private static final int ADD_RUNNER = 0;
 	private static final int CLEAR_MAP = 1;
 	protected static final int SET_DISTANCE = 2;
 	protected static final int CAUGHT = 3;
@@ -83,13 +84,16 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 		final Handler handler = new Handler() {
 			@Override
 			public void handleMessage(Message msg) {
-				if (msg.what == ADD_MARKER) {
-					mMap.addMarker(new MarkerOptions().position(
-							(LatLng) msg.obj).title(msg.arg1 + " feet"));
+				if (msg.what == ADD_RUNNER) {
+					mMap.addMarker(new MarkerOptions()
+										.position((LatLng) msg.obj).title(msg.arg1 + " feet")
+										.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
 				} else if (msg.what == ADD_LOCATION) {
 					Bundle bundle = msg.getData();
-					mMap.addMarker(new MarkerOptions().position(
-							(LatLng) msg.obj).title(bundle.getString("description")));
+					mMap.addMarker(new MarkerOptions()
+										.position((LatLng) msg.obj)
+										.title(bundle.getString("description"))
+										.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
 				} else if (msg.what == CLEAR_MAP) {
 					mMap.clear();
 				} else if (msg.what == SET_DISTANCE) {
@@ -131,54 +135,48 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 				handler.sendMessage(msg);
 
 				int minDistance = Integer.MAX_VALUE;
-				
-				if (player.getRunnerType() == 1) {		// going to location for chaser assignment
-					
+
+				if (!player.chasingPlayers()) {
+					// going to location for chaser assignment
 					// get location 
 					Location pointLoc = player.getPointLocation();
-					if (pointLoc != null) {
-
+					if (pointLoc != null && playerLocation != null)
+					{
 						LatLng latLng = new LatLng(pointLoc.getLatitude(), pointLoc.getLongitude());
-						
+
 						msg = handler.obtainMessage();
-						msg.what = ADD_MARKER;
+						msg.what = ADD_LOCATION;
 						msg.obj = latLng;
-						
-						int distance = Integer.MAX_VALUE;
-						if (playerLocation != null)
-							distance = (int) (playerLocation.distanceTo(pointLoc) * FEET_IN_ONE_METER);
-	
-						msg.arg1 = distance;
+
 						Bundle bundle = new Bundle();
 						bundle.putString("description", player.getPointDescription());
 						msg.setData(bundle);
-	
-						if (playerLocation != null)
-							handler.sendMessage(msg);
-						
-					}
-					
-				} else {				// chasing other people
 
+						handler.sendMessage(msg);
+					}
+				}
+				else
+				{
+					// chasing other people
 					// Send messages to add markers for chasers
 					for (Location runnerLoc : player.getRunnerLocations()) {
 						msg = handler.obtainMessage();
-						msg.what = ADD_MARKER;
-	
+						msg.what = ADD_RUNNER;
+
 						LatLng latLng = new LatLng(runnerLoc.getLatitude(),
 								runnerLoc.getLongitude());
 						msg.obj = latLng;
-	
+
 						int distance = Integer.MAX_VALUE;
 						if (playerLocation != null)
 							distance = (int) (playerLocation.distanceTo(runnerLoc) * FEET_IN_ONE_METER);
-	
+
 						msg.arg1 = distance;
-	
+
 						if (playerLocation != null)
 							handler.sendMessage(msg);
 					}
-	
+
 					// Check for caught runners
 					if (player.runnerCaughtByPlayer())
 					{
