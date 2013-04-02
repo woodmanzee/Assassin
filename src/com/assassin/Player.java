@@ -5,9 +5,11 @@ import java.util.List;
 
 import android.location.Location;
 
+import com.parse.GetCallback;
 import com.parse.ParseException;
 import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.ParseRelation;
 
 public class Player {
@@ -16,6 +18,7 @@ public class Player {
 	private ParseObject parseObject;
 	private boolean runnerCaughtByOther;
 	private boolean runnerCaughtByMe;
+	private String targetPoint;
 
 	// Return instance of Singleton
 	public static Player getInstance() {
@@ -140,4 +143,48 @@ public class Player {
 		runnerCaughtByOther = false;
 		return result;
 	}
+
+	public int getRunnerType() {
+		// returns 1 if going to location, 0 if chasing a human
+		if (parseObject.getBoolean("chasingHuman") == true) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+
+	public Location getPointLocation() {
+		
+		try {
+			parseObject.fetchIfNeeded();
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		
+		//ParseGeoPoint point = parseObject.getParseObject("currentTarget").getParseGeoPoint("location");
+		
+		Location newLoc = new Location("");
+		ParseQuery query = new ParseQuery("BYULocation");
+		query.getInBackground(parseObject.getParseObject("currentTarget").getObjectId(), new GetCallback() {
+		  public void done(ParseObject object, ParseException e) {
+		    if (e == null) {
+		    	Location newLoc = new Location("");
+				newLoc.setLatitude(object.getParseGeoPoint("location").getLatitude());
+				newLoc.setLongitude(object.getParseGeoPoint("location").getLongitude());
+				targetPoint = object.getString("description");
+		    } else {
+		      // something went wrong
+		    }
+		  }
+		});
+
+		return newLoc;
+	}
+
+	public String getPointDescription() {
+		//return parseObject.getParseObject("targetLocation").getString("description");
+		return targetPoint;
+	}
+	
+	
 }

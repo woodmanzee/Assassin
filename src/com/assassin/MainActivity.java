@@ -34,6 +34,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 	protected static final int CAUGHT = 3;
 	protected static final int RUNNER_CAUGHT_BY_PLAYER = 4;
 	protected static final int RUNNER_CAUGHT_BY_OTHER = 5;
+	private static final int ADD_LOCATION = 6;
 
 	protected static final float FEET_IN_ONE_METER = 3.28084F;
 
@@ -85,6 +86,10 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 				if (msg.what == ADD_MARKER) {
 					mMap.addMarker(new MarkerOptions().position(
 							(LatLng) msg.obj).title(msg.arg1 + " feet"));
+				} else if (msg.what == ADD_LOCATION) {
+					Bundle bundle = msg.getData();
+					mMap.addMarker(new MarkerOptions().position(
+							(LatLng) msg.obj).title(bundle.getString("description")));
 				} else if (msg.what == CLEAR_MAP) {
 					mMap.clear();
 				} else if (msg.what == SET_DISTANCE) {
@@ -126,39 +131,69 @@ public class MainActivity extends FragmentActivity implements LocationListener,
 				handler.sendMessage(msg);
 
 				int minDistance = Integer.MAX_VALUE;
+				
+				if (player.getRunnerType() == 1) {		// going to location for chaser assignment
+					
+					// get location 
+					Location pointLoc = player.getPointLocation();
+					if (pointLoc != null) {
 
-				// Send messages to add markers for chasers
-				for (Location runnerLoc : player.getRunnerLocations()) {
-					msg = handler.obtainMessage();
-					msg.what = ADD_MARKER;
+						LatLng latLng = new LatLng(pointLoc.getLatitude(), pointLoc.getLongitude());
+						
+						msg = handler.obtainMessage();
+						msg.what = ADD_MARKER;
+						msg.obj = latLng;
+						
+						int distance = Integer.MAX_VALUE;
+						if (playerLocation != null)
+							distance = (int) (playerLocation.distanceTo(pointLoc) * FEET_IN_ONE_METER);
+	
+						msg.arg1 = distance;
+						Bundle bundle = new Bundle();
+						bundle.putString("description", player.getPointDescription());
+						msg.setData(bundle);
+	
+						if (playerLocation != null)
+							handler.sendMessage(msg);
+						
+					}
+					
+				} else {				// chasing other people
 
-					LatLng latLng = new LatLng(runnerLoc.getLatitude(),
-							runnerLoc.getLongitude());
-					msg.obj = latLng;
-
-					int distance = Integer.MAX_VALUE;
-					if (playerLocation != null)
-						distance = (int) (playerLocation.distanceTo(runnerLoc) * FEET_IN_ONE_METER);
-
-					msg.arg1 = distance;
-
-					if (playerLocation != null)
+					// Send messages to add markers for chasers
+					for (Location runnerLoc : player.getRunnerLocations()) {
+						msg = handler.obtainMessage();
+						msg.what = ADD_MARKER;
+	
+						LatLng latLng = new LatLng(runnerLoc.getLatitude(),
+								runnerLoc.getLongitude());
+						msg.obj = latLng;
+	
+						int distance = Integer.MAX_VALUE;
+						if (playerLocation != null)
+							distance = (int) (playerLocation.distanceTo(runnerLoc) * FEET_IN_ONE_METER);
+	
+						msg.arg1 = distance;
+	
+						if (playerLocation != null)
+							handler.sendMessage(msg);
+					}
+	
+					// Check for caught runners
+					if (player.runnerCaughtByPlayer())
+					{
+						msg = handler.obtainMessage();
+						msg.what = RUNNER_CAUGHT_BY_PLAYER;
 						handler.sendMessage(msg);
-				}
+					}
 
-				// Check for caught runners
-				if (player.runnerCaughtByPlayer())
-				{
-					msg = handler.obtainMessage();
-					msg.what = RUNNER_CAUGHT_BY_PLAYER;
-					handler.sendMessage(msg);
-				}
-
-				if (player.runnerCaughtByOther())
-				{
-					msg = handler.obtainMessage();
-					msg.what = RUNNER_CAUGHT_BY_OTHER;
-					handler.sendMessage(msg);
+					if (player.runnerCaughtByOther())
+					{
+						msg = handler.obtainMessage();
+						msg.what = RUNNER_CAUGHT_BY_OTHER;
+						handler.sendMessage(msg);
+					}
+				
 				}
 
 				// Calculate distance for chaser
